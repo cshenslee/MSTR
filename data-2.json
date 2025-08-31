@@ -1,0 +1,99 @@
+{
+  "last_updated": "2025-08-31T17:38:03.830813Z",
+  "raw": {
+    "btc": 108148,
+    "mstr": 334.6,
+    "nav_floor": 240
+  },
+  "catalysts": [
+    {
+      "horizon": "Near-term",
+      "catalyst": "Options Expiry",
+      "date": "Aug 29",
+      "prob": "High",
+      "impact": "Pin $350\u2013$370",
+      "ngu": "\u2192"
+    },
+    {
+      "horizon": "Near-term",
+      "catalyst": "S&P Review Window",
+      "date": "Sep 5",
+      "prob": "High",
+      "impact": "Upside lanes >$400",
+      "ngu": "\u2197"
+    }
+  ],
+  "media": [
+    {
+      "theme": "ETF Flows",
+      "signal": "+ $219M net inflow",
+      "implication": "Supply absorption tailwind",
+      "status": "green"
+    },
+    {
+      "theme": "Barron's/Monness",
+      "signal": "Sell $175 PT",
+      "implication": "Bear counterpoint",
+      "status": "red"
+    }
+  ],
+  "macro_signals": [
+    {
+      "signal": "DXY",
+      "latest": "98.18, 5-day tilt lower",
+      "implication": "Supportive risk tone",
+      "status": "green"
+    }
+  ],
+  "institutions": [
+    {
+      "rank": 1,
+      "name": "Vanguard Group",
+      "shares": "18.54M",
+      "last": "06/30/25",
+      "trend": "Trim (~10%)",
+      "status": "yellow"
+    }
+  ],
+  "corporate": [
+    {
+      "date": "Aug 19",
+      "entity": "KindlyMD",
+      "amount_btc": "+5,744",
+      "usd": "~$679M",
+      "notes": "Largest recent non-MSTR buy",
+      "sig": "\u25cf"
+    }
+  ],
+  "reg_live": [
+    {
+      "item": "US Spot BTC ETFs",
+      "status": "Live since Jan 10, 2024"
+    }
+  ],
+  "reg_pending": [
+    {
+      "item": "CLARITY Act",
+      "status": "Awaiting Senate"
+    }
+  ],
+  "trade": {
+    "rec": "Hold core. Add on strength if BTC > $108K and MSTR holds $335\u2013340. Risk-off if BTC < $108K daily or MSTR < $330.",
+    "scenarios": [
+      {
+        "name": "Controlled Uptrend",
+        "prob": "40%",
+        "btc": "$118\u2013122K",
+        "mstr": "$380\u2013400"
+      }
+    ],
+    "tripwires": [
+      {
+        "signal": "BTC Daily Close",
+        "current": "$108,400",
+        "status": "\u26a0\ufe0f",
+        "critical": "<$108K"
+      }
+    ]
+  }
+}
