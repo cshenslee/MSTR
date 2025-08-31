@@ -103,6 +103,13 @@
       }
     }
 
+    // Add timestamp if available
+const ts = data?.meta?.trade_rec_last_generated || data?.trade_recommendation?.generated_at_utc;
+const elTs = document.getElementById('trade-rec-ts');
+if (elTs && ts) {
+  elTs.textContent = `(auto @ ${ts} UTC)`;
+}
+
     // TRADE — Scenarios
     const scenBody = document.querySelector('#scenarios_body');
     if (scenBody && Array.isArray(data.trade?.scenarios)) {
