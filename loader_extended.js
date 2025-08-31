@@ -132,6 +132,14 @@ if (elTs && ts) {
     lastEl.textContent = `Last Revised: ${stamp} UTC`;
   }
 }
+    
+    const stamp = srcIso
+      ? toUtcStamp(srcIso)
+      : toUtcStamp(new Date().toISOString());
+
+    lastEl.textContent = `Last Revised: ${stamp} UTC`;
+  }
+}
 
     const stamp = srcIso
       ? toUtcStamp(srcIso)
