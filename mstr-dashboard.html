@@ -2438,11 +2438,12 @@
             updateById('rd-btc-current', USD.format(currentBtcPrice));
             updateById('rd-mstr-current', USDPrecise.format(currentMstrPrice));
             
-            // Update timestamp
-            const now = new Date();
-            const pst = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
-            const formatted = pst.toISOString().replace('T', ' ').substring(0, 16) + ' PT';
-            document.querySelector('.last-updated').textContent = `Last Revised: ${formatted}`;
+            const formatted = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Los_Angeles',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', hour12: false
+}).format(new Date()).replace(',', '');
+document.querySelector('.last-updated').textContent = `Last Revised: ${formatted} PT`;
             
             alert(`Valuations Updated!\n\nCurrent Fair Value Range: ${USD.format(currentFairValues.camtCurrentBase)} - ${USD.format(currentFairValues.prefIncl)}\nEOY Target Range: ${USD.format(eoyFairValues.camtCurrentBase)} - ${USD.format(eoyFairValues.prefIncl)}\nCurrent MSTR: ${USDPrecise.format(currentMstrPrice)}\nEOY Upside: +${eoyMinUpside.toFixed(0)}% to +${eoyMaxUpside.toFixed(0)}%`);
         }
