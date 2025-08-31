@@ -110,7 +110,7 @@ if (elTs && ts) {
   elTs.textContent = `(auto @ ${ts} UTC)`;
 }
 
-    // HEADER — Last Revised (PT) from JSON (UTC) or now
+ // HEADER — Last Revised (UTC only)
 {
   const srcIso =
     data?.meta?.last_updated_utc ||
@@ -120,16 +120,11 @@ if (elTs && ts) {
   const lastEl = document.querySelector('.last-updated');
   if (lastEl) {
     const dt = srcIso ? new Date(srcIso) : new Date();
-    const fmt = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Los_Angeles',
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false
-    });
-    lastEl.textContent = `Last Revised: ${fmt.format(dt).replace(',', '')} PT`;
+    lastEl.textContent =
+      `Last Revised: ${dt.toISOString().replace('T',' ').substring(0,16)} UTC`;
   }
 }
-
-    
+   
     // TRADE — Scenarios
     const scenBody = document.querySelector('#scenarios_body');
     if (scenBody && Array.isArray(data.trade?.scenarios)) {
