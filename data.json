@@ -11,8 +11,8 @@
       "catalyst": "Options Expiry",
       "date": "Aug 29",
       "prob": "High",
-      "impact": "Pin $350\u2013$370",
-      "ngu": "\u2192"
+      "impact": "Pin $350–$370",
+      "ngu": "→"
     },
     {
       "horizon": "Near-term",
@@ -20,7 +20,7 @@
       "date": "Sep 5",
       "prob": "High",
       "impact": "Upside lanes >$400",
-      "ngu": "\u2197"
+      "ngu": "↗"
     }
   ],
   "media": [
@@ -62,7 +62,7 @@
       "amount_btc": "+5,744",
       "usd": "~$679M",
       "notes": "Largest recent non-MSTR buy",
-      "sig": "\u25cf"
+      "sig": "●"
     }
   ],
   "reg_live": [
@@ -78,22 +78,36 @@
     }
   ],
   "trade": {
-    "rec": "Hold core. Add on strength if BTC > $108K and MSTR holds $335\u2013340. Risk-off if BTC < $108K daily or MSTR < $330.",
+    "rec": "Hold core. Add on strength if BTC > $108K and MSTR holds $335–340. Risk-off if BTC < $108K daily or MSTR < $330.",
     "scenarios": [
       {
         "name": "Controlled Uptrend",
         "prob": "40%",
-        "btc": "$118\u2013122K",
-        "mstr": "$380\u2013400"
+        "btc": "$118–122K",
+        "mstr": "$380–400"
       }
     ],
     "tripwires": [
       {
         "signal": "BTC Daily Close",
         "current": "$108,400",
-        "status": "\u26a0\ufe0f",
+        "status": "⚠️",
         "critical": "<$108K"
       }
     ]
+  },
+  "trade_recommendation": {
+    "generated_at_utc": "2025-08-31 18:31:19",
+    "core_position": "Hold (reduced tacticals)",
+    "tacticals": "Avoid chasing; reduce adds while BTC < $108,000 or MSTR < $330.",
+    "add_on_strength": "",
+    "add_on_support": "Look for stabilization near $330–$340 / BTC $108,000–$110,000 before adding.",
+    "btc_strategy": "Ladder buys closer to $104,000 only if flows improve.",
+    "options": "",
+    "risk_management": "Risk-off if BTC < $108,000 daily close or MSTR < $330 daily close.",
+    "targets": "BTC: $112,000 → $114,000–$118,000; MSTR: $350–$365 → $357–$387."
+  },
+  "meta": {
+    "trade_rec_last_generated": "2025-08-31 18:31:19"
   }
 }
