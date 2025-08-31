@@ -1,0 +1,41 @@
+name: Auto Trade Recommendation (3x daily PT)
+
+on:
+  schedule:
+    # PDT (UTC-7): 06:00, 11:00, 17:00 PT  -> 13:00, 18:00, 00:00 UTC
+    - cron: '0 0,13,18 * * *'
+    # PST (UTC-8): 06:00, 11:00, 17:00 PT  -> 14:00, 19:00, 01:00 UTC
+    - cron: '0 1,14,19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run analyzer
+        run: |
+          python -V
+          python analyzer.py
+
+      - name: Commit changes (only if modified)
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data.json
+            git commit -m "auto: refresh trade recommendation"
+            git push
+          else
+            echo "No changes to commit."
+          fi
