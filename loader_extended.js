@@ -110,18 +110,26 @@ if (elTs && ts) {
   elTs.textContent = `(auto @ ${ts} UTC)`;
 }
 
- // HEADER — Last Revised (UTC only)
+// HEADER — Last Revised (always show UTC, no conversion)
 {
   const srcIso =
-    data?.meta?.last_updated_utc ||
-    data?.trade_recommendation?.generated_at_utc ||
+    (data2?.meta && data2.meta.last_updated_utc) ||
+    (data2?.trade_recommendation && data2.trade_recommendation.generated_at_utc) ||
     null;
 
   const lastEl = document.querySelector('.last-updated');
   if (lastEl) {
-    const dt = srcIso ? new Date(srcIso) : new Date();
-    lastEl.textContent =
-      `Last Revised: ${dt.toISOString().replace('T',' ').substring(0,16)} UTC`;
+    // helper to drop seconds and the trailing 'Z'
+    const toUtcStamp = (iso) =>
+      iso
+        .replace('T', ' ')
+        .replace(/:\d{2}(?:\.\d+)?Z?$/, ''); // trim :ss(.ms) and Z
+
+    const stamp = srcIso
+      ? toUtcStamp(srcIso)
+      : toUtcStamp(new Date().toISOString());
+
+    lastEl.textContent = `Last Revised: ${stamp} UTC`;
   }
 }
    
