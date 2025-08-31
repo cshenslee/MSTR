@@ -113,8 +113,8 @@ if (elTs && ts) {
 // HEADER — Last Revised (always show UTC, no conversion)
 {
   const srcIso =
-    (data2?.meta && data2.meta.last_updated_utc) ||
-    (data2?.trade_recommendation && data2.trade_recommendation.generated_at_utc) ||
+    (data?.meta && data.meta.last_updated_utc) ||
+    (data?.trade_recommendation && data.trade_recommendation.generated_at_utc) ||
     null;
 
   const lastEl = document.querySelector('.last-updated');
