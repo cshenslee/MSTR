@@ -1,11 +1,30 @@
 
-// MSTR Analytics Dashboard - App Logic (v2 with debug + robust URLs)
+// MSTR Analytics Dashboard - App Logic (v3: dual-ID support + keep status dots)
 (function(){
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const pad = (n) => String(n).padStart(2,'0');
 
-  console.log("[MSTR] app.js boot");
+  console.log("[MSTR] app.js boot v3");
+
+  // Helper: set text while preserving a trailing .status-dot span if present
+  function setMetricPreserveDot(el, text) {
+    if (!el) return;
+    const dot = el.querySelector('.status-dot');
+    if (dot) {
+      // Preserve the dot classes
+      el.innerHTML = `${text} `;
+      el.appendChild(dot);
+    } else {
+      el.textContent = text;
+    }
+  }
+  function setMetricAny(selectors, text) {
+    selectors.forEach(sel => {
+      const el = $(sel);
+      if (el) setMetricPreserveDot(el, text);
+    });
+  }
 
   // 1) Stamp UTC "Last Revised" using the page's last-modified time
   try {
@@ -29,10 +48,15 @@
 
   // 3) Lightweight "calculate" echo so UI never errors
   window.updateValuations = function(){
+    console.log("[MSTR] updateValuations()");
     const btc = parseFloat($('#current-btc-price')?.value || '0');
     const mstr = parseFloat($('#current-mstr-price')?.value || '0');
-    if (!isNaN(btc) && $('#rd-btc-current')) $('#rd-btc-current').textContent = `$${btc.toLocaleString()}`;
-    if (!isNaN(mstr) && $('#rd-mstr-current')) $('#rd-mstr-current').textContent = `$${mstr.toFixed(2)}`;
+    if (!isNaN(btc)) {
+      setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${btc.toLocaleString()}`);
+    }
+    if (!isNaN(mstr)) {
+      setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${mstr.toFixed(2)}`);
+    }
   };
 
   // 4) Data loader with robust path resolution + debug logs
@@ -78,35 +102,30 @@
     }
   }
 
-  function setText(sel, val) {
-    const el = (sel[0] === '#') ? document.querySelector(sel) : sel;
-    if (!el) return;
-    el.textContent = val;
-  }
-
   function applyData(d) {
     const raw = d.raw || d;
 
-    if (raw.btc) setText('#rd-btc-current', `$${Number(raw.btc).toLocaleString()}`);
-    if (raw.mstr) setText('#rd-mstr-current', `$${Number(raw.mstr).toFixed(2)}`);
-    if (document.querySelector('#current-btc-price') && raw.btc) document.querySelector('#current-btc-price').value = Number(raw.btc);
-    if (document.querySelector('#current-mstr-price') && raw.mstr) document.querySelector('#current-mstr-price').value = Number(raw.mstr);
+    if (raw.btc) setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${Number(raw.btc).toLocaleString()}`);
+    if (raw.mstr) setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${Number(raw.mstr).toFixed(2)}`);
 
-    if (raw.nav_floor) setText('#rd-nav-basic', `$${Number(raw.nav_floor)}`);
-    if (d.mnv_equity_base) setText('#rd-cur-base', `$${d.mnv_equity_base}`);
-    if (d.mnv_equity_inclusion) setText('#rd-cur-incl', `$${d.mnv_equity_inclusion}`);
-    if (d.preferred_engine_base) setText('#rd-pref-base', `$${d.preferred_engine_base}`);
-    if (d.preferred_engine_inclusion) setText('#rd-pref-incl', `$${d.preferred_engine_inclusion}`);
+    if ($('#current-btc-price') && raw.btc) $('#current-btc-price').value = Number(raw.btc);
+    if ($('#current-mstr-price') && raw.mstr) $('#current-mstr-price').value = Number(raw.mstr);
 
-    if (d.trade?.rec && document.querySelector('#trade')) {
-      let target = document.querySelector('#trade .recommendation-box');
+    if (raw.nav_floor) setMetricAny(['#rd-nav-basic'], `$${Number(raw.nav_floor)}`);
+    if (d.mnv_equity_base) setMetricAny(['#rd-cur-base'], `$${d.mnv_equity_base}`);
+    if (d.mnv_equity_inclusion) setMetricAny(['#rd-cur-incl'], `$${d.mnv_equity_inclusion}`);
+    if (d.preferred_engine_base) setMetricAny(['#rd-pref-base'], `$${d.preferred_engine_base}`);
+    if (d.preferred_engine_inclusion) setMetricAny(['#rd-pref-incl'], `$${d.preferred_engine_inclusion}`);
+
+    if (d.trade?.rec && $('#trade')) {
+      let target = $('#trade .recommendation-box');
       if (!target) {
         target = document.createElement('div');
         target.className = 'recommendation-box';
         target.innerHTML = '<h4>Auto Trade Recommendation</h4><div id="rec-text"></div>';
-        document.querySelector('#trade').insertBefore(target, document.querySelector('#trade').firstChild);
+        $('#trade').insertBefore(target, $('#trade').firstChild);
       }
-      setText('#rec-text', d.trade.rec);
+      $('#rec-text').textContent = d.trade.rec;
     }
 
     const bluf = d?.trade_recommendation?.core_position;
