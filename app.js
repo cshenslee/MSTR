@@ -1,11 +1,13 @@
 
-// MSTR Analytics Dashboard - App Logic (v4: robust Calculate binding + live input updates)
+// MSTR Analytics Dashboard - App Logic (v5)
+// - Robust Calculate binding + live input updates
+// - Safer Trade Rec rendering (no global #rec-text lookup)
 (function(){
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const pad = (n) => String(n).padStart(2,'0');
 
-  console.log("[MSTR] app.js boot v4");
+  console.log("[MSTR] app.js boot v5");
 
   // Preserve a trailing .status-dot span when updating text
   function setMetricPreserveDot(el, text) {
@@ -39,12 +41,8 @@
   function applyInputsToTiles() {
     const btcVal = parseFloat($('#current-btc-price')?.value || 'NaN');
     const mstrVal = parseFloat($('#current-mstr-price')?.value || 'NaN');
-    if (!Number.isNaN(btcVal)) {
-      setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${btcVal.toLocaleString()}`);
-    }
-    if (!Number.isNaN(mstrVal)) {
-      setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${mstrVal.toFixed(2)}`);
-    }
+    if (!Number.isNaN(btcVal)) setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${btcVal.toLocaleString()}`);
+    if (!Number.isNaN(mstrVal)) setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${mstrVal.toFixed(2)}`);
   }
 
   // 3) Expose for inline onclick (in case the HTML already has it)
@@ -61,8 +59,6 @@
       'input[type="button"][value="Calculate"]', 'input[type="submit"][value="Calculate"]'
     ];
     let bound = false;
-
-    // Try common id/class/data selectors first
     for (const sel of candidates) {
       const btn = $(sel);
       if (btn) {
@@ -72,8 +68,6 @@
         break;
       }
     }
-
-    // Fallback: any button whose text includes "calculate"
     if (!bound) {
       const buttons = $$('button, input[type="button"], input[type="submit"]');
       for (const b of buttons) {
@@ -86,27 +80,19 @@
         }
       }
     }
-
-    // Live updates as the user types / changes the inputs
     const btcInput = $('#current-btc-price');
     const mstrInput = $('#current-mstr-price');
     ['input', 'change', 'blur'].forEach(evt => {
       if (btcInput) btcInput.addEventListener(evt, applyInputsToTiles);
       if (mstrInput) mstrInput.addEventListener(evt, applyInputsToTiles);
     });
-
-    if (!bound) {
-      console.warn("[MSTR] Calculate button not found. Inputs will still live-update tiles.");
-    }
+    if (!bound) console.warn("[MSTR] Calculate button not found. Inputs will still live-update tiles.");
   }
 
-  // 5) Data loader (unchanged from v3, with logs)
+  // 5) Data loader
   async function loadData() {
     const base = new URL('.', location.href); // ends with a /
-    const urls = [
-      new URL('data.json', base).href,
-      new URL('data-3.json', base).href
-    ];
+    const urls = [ new URL('data.json', base).href, new URL('data-3.json', base).href ];
     window.__MSTR_DEBUG = { urls };
 
     let data = null, fromUrl = null, lastErr = null;
@@ -123,10 +109,7 @@
         console.warn("[MSTR] fetch failed", u, e);
       }
     }
-    if (!data) {
-      console.warn("[MSTR] No data.json or data-3.json found", lastErr);
-      return;
-    }
+    if (!data) { console.warn("[MSTR] No data.json or data-3.json found", lastErr); return; }
     console.log("[MSTR] Loaded:", fromUrl);
     try {
       applyData(data);
@@ -138,9 +121,7 @@
           if (el) el.textContent = `Last Revised: ${dt.toUTCString().replace(' GMT',' UTC')}`;
         }
       }
-    } catch(e) {
-      console.error("[MSTR] applyData failed", e);
-    }
+    } catch(e) { console.error("[MSTR] applyData failed", e); }
   }
 
   function applyData(d) {
@@ -158,15 +139,22 @@
     if (d.preferred_engine_base) setMetricAny(['#rd-pref-base'], `$${d.preferred_engine_base}`);
     if (d.preferred_engine_inclusion) setMetricAny(['#rd-pref-incl'], `$${d.preferred_engine_inclusion}`);
 
+    // Safe Trade Rec rendering
     if (d.trade?.rec && $('#trade')) {
-      let target = $('#trade .recommendation-box');
-      if (!target) {
-        target = document.createElement('div');
-        target.className = 'recommendation-box';
-        target.innerHTML = '<h4>Auto Trade Recommendation</h4><div id="rec-text"></div>';
-        $('#trade').insertBefore(target, $('#trade').firstChild);
+      let box = $('#trade .recommendation-box');
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'recommendation-box';
+        const h = document.createElement('h4');
+        h.textContent = 'Auto Trade Recommendation';
+        const recDiv = document.createElement('div');
+        recDiv.setAttribute('data-rec', '1');
+        box.appendChild(h);
+        box.appendChild(recDiv);
+        $('#trade').insertBefore(box, $('#trade').firstChild);
       }
-      $('#rec-text').textContent = d.trade.rec;
+      const recTarget = $('#trade .recommendation-box [data-rec]');
+      if (recTarget) recTarget.textContent = d.trade.rec;
     }
 
     const bluf = d?.trade_recommendation?.core_position;
@@ -179,7 +167,7 @@
     }
   }
 
-  // Kickoff after DOM is ready to ensure elements exist
+  // Kickoff after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => { bindCalculate(); loadData(); });
   } else {
