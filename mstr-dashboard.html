@@ -342,7 +342,7 @@
     <div class="container">
         <div class="header">
             <h1>MSTR Analytics Dashboard</h1>
-            <p class="last-updated">Last Revised: 2025-08-29 11:42 AM PT</p>
+            <p class="last-updated" id="last-revised">Last Revised: …</p>
         </div>
         
         <div class="tabs">
@@ -2448,5 +2448,18 @@
         }
     </script>
   <script src="loader_extended.js?v=3"></script>
+<script>
+// Minimal UTC stamp fallback in case app.js doesn't load:
+(function(){
+  try {
+    var d = new Date(document.lastModified);
+    function pad(n){ return String(n).padStart(2,'0'); }
+    var utc = d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())+" "+pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+" UTC";
+    var el = document.getElementById('last-revised');
+    if (el) el.textContent = "Last Revised: " + utc;
+  } catch(e){}
+})();
+</script>
+<script src="app.js"></script>
 </body>
 </html>
