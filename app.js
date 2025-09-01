@@ -1,18 +1,17 @@
 
-// MSTR Analytics Dashboard - App Logic (v3: dual-ID support + keep status dots)
+// MSTR Analytics Dashboard - App Logic (v4: robust Calculate binding + live input updates)
 (function(){
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const pad = (n) => String(n).padStart(2,'0');
 
-  console.log("[MSTR] app.js boot v3");
+  console.log("[MSTR] app.js boot v4");
 
-  // Helper: set text while preserving a trailing .status-dot span if present
+  // Preserve a trailing .status-dot span when updating text
   function setMetricPreserveDot(el, text) {
     if (!el) return;
     const dot = el.querySelector('.status-dot');
     if (dot) {
-      // Preserve the dot classes
       el.innerHTML = `${text} `;
       el.appendChild(dot);
     } else {
@@ -36,37 +35,79 @@
     console.warn("[MSTR] UTC stamp failed", e);
   }
 
-  // 2) Tab switching
-  window.switchTab = function(id){
-    $$('.tab').forEach(b => b.classList.remove('active'));
-    $$('.tab-content').forEach(c => c.classList.remove('active'));
-    const btn = Array.from($$('.tab')).find(b => (b.getAttribute('onclick') || '').includes(`'${id}'`));
-    if (btn) btn.classList.add('active');
-    const panel = $(`#${id}`);
-    if (panel) panel.classList.add('active');
-  };
+  // 2) The function that applies the two input values to the Raw Data tiles
+  function applyInputsToTiles() {
+    const btcVal = parseFloat($('#current-btc-price')?.value || 'NaN');
+    const mstrVal = parseFloat($('#current-mstr-price')?.value || 'NaN');
+    if (!Number.isNaN(btcVal)) {
+      setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${btcVal.toLocaleString()}`);
+    }
+    if (!Number.isNaN(mstrVal)) {
+      setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${mstrVal.toFixed(2)}`);
+    }
+  }
 
-  // 3) Lightweight "calculate" echo so UI never errors
+  // 3) Expose for inline onclick (in case the HTML already has it)
   window.updateValuations = function(){
-    console.log("[MSTR] updateValuations()");
-    const btc = parseFloat($('#current-btc-price')?.value || '0');
-    const mstr = parseFloat($('#current-mstr-price')?.value || '0');
-    if (!isNaN(btc)) {
-      setMetricAny(['#rd-btc-current', '#rd-current-btc'], `$${btc.toLocaleString()}`);
-    }
-    if (!isNaN(mstr)) {
-      setMetricAny(['#rd-mstr-current', '#rd-current-mstr'], `$${mstr.toFixed(2)}`);
-    }
+    console.log("[MSTR] updateValuations() called");
+    applyInputsToTiles();
   };
 
-  // 4) Data loader with robust path resolution + debug logs
+  // 4) Robust binding for the "Calculate" button and live updates
+  function bindCalculate() {
+    const candidates = [
+      '#calculate', '#calculate-btn', '#calc', '#btn-calc',
+      'button[data-action="calculate"]', 'button[data-role="calculate"]',
+      'input[type="button"][value="Calculate"]', 'input[type="submit"][value="Calculate"]'
+    ];
+    let bound = false;
+
+    // Try common id/class/data selectors first
+    for (const sel of candidates) {
+      const btn = $(sel);
+      if (btn) {
+        btn.addEventListener('click', window.updateValuations);
+        console.log(`[MSTR] Bound Calculate via selector: ${sel}`);
+        bound = true;
+        break;
+      }
+    }
+
+    // Fallback: any button whose text includes "calculate"
+    if (!bound) {
+      const buttons = $$('button, input[type="button"], input[type="submit"]');
+      for (const b of buttons) {
+        const label = (b.value || b.textContent || '').trim().toLowerCase();
+        if (label.includes('calculate')) {
+          b.addEventListener('click', window.updateValuations);
+          console.log("[MSTR] Bound Calculate via text match:", label);
+          bound = true;
+          break;
+        }
+      }
+    }
+
+    // Live updates as the user types / changes the inputs
+    const btcInput = $('#current-btc-price');
+    const mstrInput = $('#current-mstr-price');
+    ['input', 'change', 'blur'].forEach(evt => {
+      if (btcInput) btcInput.addEventListener(evt, applyInputsToTiles);
+      if (mstrInput) mstrInput.addEventListener(evt, applyInputsToTiles);
+    });
+
+    if (!bound) {
+      console.warn("[MSTR] Calculate button not found. Inputs will still live-update tiles.");
+    }
+  }
+
+  // 5) Data loader (unchanged from v3, with logs)
   async function loadData() {
     const base = new URL('.', location.href); // ends with a /
     const urls = [
       new URL('data.json', base).href,
       new URL('data-3.json', base).href
     ];
-    window.__MSTR_DEBUG = { urls }; // visible in console
+    window.__MSTR_DEBUG = { urls };
 
     let data = null, fromUrl = null, lastErr = null;
     for (const u of urls) {
@@ -138,6 +179,10 @@
     }
   }
 
-  // Kickoff
-  loadData();
+  // Kickoff after DOM is ready to ensure elements exist
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { bindCalculate(); loadData(); });
+  } else {
+    bindCalculate(); loadData();
+  }
 })();
