@@ -1,14 +1,11 @@
-// MSTR Analytics Dashboard - App Logic
-// - UTC "Last Revised" from document.lastModified
-// - Data loader for ./data.json (fallback to ./data-3.json)
-// - Basic tab switching (switchTab)
-// - Safe DOM updates for known IDs
 
+// MSTR Analytics Dashboard - App Logic (v2 with debug + robust URLs)
 (function(){
-  // Helpers
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const pad = (n) => String(n).padStart(2,'0');
+
+  console.log("[MSTR] app.js boot");
 
   // 1) Stamp UTC "Last Revised" using the page's last-modified time
   try {
@@ -17,7 +14,7 @@
     const el = $('#last-revised');
     if (el) el.textContent = `Last Revised: ${utc}`;
   } catch(e) {
-    console.warn("UTC stamp failed", e);
+    console.warn("[MSTR] UTC stamp failed", e);
   }
 
   // 2) Tab switching
@@ -30,38 +27,44 @@
     if (panel) panel.classList.add('active');
   };
 
-  // 3) Update Valuations – lightweight calculator placeholder (prevents errors)
+  // 3) Lightweight "calculate" echo so UI never errors
   window.updateValuations = function(){
-    // This just reflects user inputs into the Raw Data tiles for now.
     const btc = parseFloat($('#current-btc-price')?.value || '0');
     const mstr = parseFloat($('#current-mstr-price')?.value || '0');
-    if (!isNaN(btc) && $('#rd-current-btc')) $('#rd-current-btc').firstChild.nodeValue = `$${btc.toLocaleString()}`;
-    if (!isNaN(mstr) && $('#rd-current-mstr')) $('#rd-current-mstr').firstChild.nodeValue = `$${mstr.toFixed(2)}`;
+    if (!isNaN(btc) && $('#rd-btc-current')) $('#rd-btc-current').textContent = `$${btc.toLocaleString()}`;
+    if (!isNaN(mstr) && $('#rd-mstr-current')) $('#rd-mstr-current').textContent = `$${mstr.toFixed(2)}`;
   };
 
-  // 4) Data loader
+  // 4) Data loader with robust path resolution + debug logs
   async function loadData() {
-    const urls = ['./data.json', './data-3.json']; // prefer data.json (GitHub Action), fallback to data-3.json
-    let data = null, lastUrl = null, error = null;
+    const base = new URL('.', location.href); // ends with a /
+    const urls = [
+      new URL('data.json', base).href,
+      new URL('data-3.json', base).href
+    ];
+    window.__MSTR_DEBUG = { urls }; // visible in console
+
+    let data = null, fromUrl = null, lastErr = null;
     for (const u of urls) {
       try {
+        console.log("[MSTR] trying", u);
         const res = await fetch(u, { cache: 'no-store' });
-        if (res.ok) {
-          data = await res.json();
-          lastUrl = u;
-          break;
-        }
+        if (!res.ok) { console.warn("[MSTR] fetch not ok", u, res.status); continue; }
+        data = await res.json();
+        fromUrl = u;
+        break;
       } catch (e) {
-        error = e;
+        lastErr = e;
+        console.warn("[MSTR] fetch failed", u, e);
       }
     }
     if (!data) {
-      console.warn('No data file found (tried data.json, data-3.json)', error);
+      console.warn("[MSTR] No data.json or data-3.json found", lastErr);
       return;
     }
+    console.log("[MSTR] Loaded:", fromUrl);
     try {
       applyData(data);
-      // If JSON has last_updated or generated_at_utc, override visible stamp to "data-asof (UTC)"
       const asof = data.last_updated || data?.trade_recommendation?.generated_at_utc || data?.meta?.trade_rec_last_generated;
       if (asof) {
         const dt = new Date(asof.replace(' ', 'T') + 'Z');
@@ -70,54 +73,42 @@
           if (el) el.textContent = `Last Revised: ${dt.toUTCString().replace(' GMT',' UTC')}`;
         }
       }
-      console.log('Loaded:', lastUrl);
     } catch(e) {
-      console.error('applyData failed', e);
+      console.error("[MSTR] applyData failed", e);
     }
   }
 
-  function setText(id, val, formatter) {
-    const el = $(id);
+  function setText(sel, val) {
+    const el = (sel[0] === '#') ? document.querySelector(sel) : sel;
     if (!el) return;
-    if (formatter) el.textContent = formatter(val);
-    else el.textContent = val;
+    el.textContent = val;
   }
 
   function applyData(d) {
-    // Support both flat and nested shapes from analyzer.py
     const raw = d.raw || d;
 
-    // Prices
-    if (raw.btc) setText('#rd-btc-current', `$${Number(raw.btc).toLocaleString()} `);
-    if (raw.mstr) setText('#rd-mstr-current', `$${Number(raw.mstr).toFixed(2)} `);
+    if (raw.btc) setText('#rd-btc-current', `$${Number(raw.btc).toLocaleString()}`);
+    if (raw.mstr) setText('#rd-mstr-current', `$${Number(raw.mstr).toFixed(2)}`);
+    if (document.querySelector('#current-btc-price') && raw.btc) document.querySelector('#current-btc-price').value = Number(raw.btc);
+    if (document.querySelector('#current-mstr-price') && raw.mstr) document.querySelector('#current-mstr-price').value = Number(raw.mstr);
 
-    // Also reflect into the header input defaults if present
-    if ($('#current-btc-price') && raw.btc) $('#current-btc-price').value = Number(raw.btc);
-    if ($('#current-mstr-price') && raw.mstr) $('#current-mstr-price').value = Number(raw.mstr);
-
-    // Fair-value tiles (if provided)
     if (raw.nav_floor) setText('#rd-nav-basic', `$${Number(raw.nav_floor)}`);
-    // Sample mapping from your earlier numbers (optional)
     if (d.mnv_equity_base) setText('#rd-cur-base', `$${d.mnv_equity_base}`);
     if (d.mnv_equity_inclusion) setText('#rd-cur-incl', `$${d.mnv_equity_inclusion}`);
     if (d.preferred_engine_base) setText('#rd-pref-base', `$${d.preferred_engine_base}`);
     if (d.preferred_engine_inclusion) setText('#rd-pref-incl', `$${d.preferred_engine_inclusion}`);
 
-    // Tripwires / trade
-    if (d.trade?.rec && $('#trade')) {
-      // Put the recommendation text at the top of the Trade tab if you like
-      let target = $('#trade').querySelector('.recommendation-box');
+    if (d.trade?.rec && document.querySelector('#trade')) {
+      let target = document.querySelector('#trade .recommendation-box');
       if (!target) {
-        // inject a simple box
         target = document.createElement('div');
         target.className = 'recommendation-box';
         target.innerHTML = '<h4>Auto Trade Recommendation</h4><div id="rec-text"></div>';
-        $('#trade').insertBefore(target, $('#trade').firstChild);
+        document.querySelector('#trade').insertBefore(target, document.querySelector('#trade').firstChild);
       }
-      $('#rec-text').textContent = d.trade.rec;
+      setText('#rec-text', d.trade.rec);
     }
 
-    // Populate the "Raw Data" header BLUF with a quick summary if available
     const bluf = d?.trade_recommendation?.core_position;
     if (bluf) {
       const box = document.querySelector('#rawdata .bluf');
