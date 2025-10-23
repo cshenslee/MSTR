@@ -97,7 +97,7 @@
     ]
   },
   "trade_recommendation": {
-    "generated_at_utc": "2025-10-22 19:08:20",
+    "generated_at_utc": "2025-10-23 01:26:46",
     "core_position": "Hold (reduced tacticals)",
     "tacticals": "Avoid chasing; reduce adds while BTC < $108,000 or MSTR < $330.",
     "add_on_strength": "",
@@ -108,6 +108,6 @@
     "targets": "BTC: $112,000 → $114,000–$118,000; MSTR: $350–$365 → $357–$387."
   },
   "meta": {
-    "trade_rec_last_generated": "2025-10-22 19:08:20"
+    "trade_rec_last_generated": "2025-10-23 01:26:46"
   }
 }
